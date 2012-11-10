@@ -14,6 +14,7 @@ import org.apache.log4j.spi.LoggingEvent;
  * To change this template use File | Settings | File Templates.
  */
 public class ShortPatternLayout extends PatternLayout {
+    private static final String sysInfo = Util.getHostName() + ":" + Util.getPid();
 
     @Override
     protected PatternParser createPatternParser(String pattern) {
@@ -21,6 +22,7 @@ public class ShortPatternLayout extends PatternLayout {
     }
 
     class SpecialPatternParser extends PatternParser {
+
 
         public SpecialPatternParser(String pattern) {
             super(pattern);
@@ -31,7 +33,10 @@ public class ShortPatternLayout extends PatternLayout {
             PatternConverter pc = null;
             switch (arg0) {
                 case 'Z':
-                    pc = new SpecialPatternConverter(formattingInfo);
+                    pc = new ShortLevelConverter(formattingInfo);
+                    break;
+                case 'S':
+                    pc = new SysInfoConverter(formattingInfo);
                     break;
                 default:
                     super.finalizeConverter(arg0);
@@ -40,15 +45,27 @@ public class ShortPatternLayout extends PatternLayout {
         }
     }
 
-    class SpecialPatternConverter extends PatternConverter {
+    class ShortLevelConverter extends PatternConverter {
 
-        public SpecialPatternConverter(FormattingInfo fi) {
+        public ShortLevelConverter(FormattingInfo fi) {
             super(fi);
         }
 
         @Override
         protected String convert(LoggingEvent event) {
             return event.getLevel().toString().substring(0,1);
+        }
+    }
+
+    class SysInfoConverter extends PatternConverter {
+
+        public SysInfoConverter(FormattingInfo fi) {
+            super(fi);
+        }
+
+        @Override
+        protected String convert(LoggingEvent event) {
+            return sysInfo;
         }
     }
 }

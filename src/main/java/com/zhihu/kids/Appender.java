@@ -9,6 +9,7 @@ package com.zhihu.kids;
  */
 
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.spi.ErrorCode;
 import org.apache.log4j.spi.LoggingEvent;
 import redis.clients.jedis.Jedis;
 
@@ -66,14 +67,33 @@ public class Appender extends AppenderSkeleton {
                 }
             }
 
-            client.publish(topic.getBytes(), buf.toString().getBytes());
+            for (int i = 0; i < 3; i ++) {
+                try{
+                    client.publish(topic.getBytes(), buf.toString().getBytes());
+                    break;
+                } catch (Exception e) {
+                    errorHandler.error("Error publish to kids", e, ErrorCode.FLUSH_FAILURE);
+                    synchronized (this) {
+                        try{
+                            client.disconnect();
+                            client.connect();
+                        } catch (Exception ee) {
+                            errorHandler.error("Error in kids reconnect", e, ErrorCode.FLUSH_FAILURE);
+                        }
+                    }
+                }
+            }
 
         }
     }
 
     @Override
     public void close() {
-        client.disconnect();
+        try{
+            client.disconnect();
+        } catch (Exception e) {
+            errorHandler.error("Error in kids close", e, ErrorCode.CLOSE_FAILURE);
+        }
     }
 
     @Override
